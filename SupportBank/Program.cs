@@ -19,20 +19,30 @@ namespace SupportBank
             // Splits the whole file into lines, wherever there is an instance of '\r', and removes any empty entries
             int entries = lines.Length - 1;  // create a variable to know how many transactions we're dealing with
 
-            List<string> people = new List<string>();
+            List<string> people = new List<string>();    // Here we aim to just list everybody involved
             for (int i = 1; i <= entries; i++)  // Look at each transaction in turn
             {
-                string[] transaction = lines[i].Split(',');
-                people.Add(transaction[1]);
-                people.Add(transaction[2]);
+                string[] transaction = lines[i].Split(',');       // Split the transactions into their different components
+                people.Add(transaction[1]);                       // Add whoever owes to the list
+                people.Add(transaction[2]);                       // Add whoever is owed to the list
             }
-            people = people.Distinct().ToList();
-            foreach(string x in people)
+            people = people.Distinct().ToList();                  // Remove any duplicates
+
+            foreach(string human in people)                       // Now we go through each person and find out how much they owe/are owed
             {
-                Console.WriteLine("{0}", x);
+                double owed = 0;    // Start owed at 0
+                double owes = 0;    // Start owes at 0
+                for(int i=1; i<= entries; i++)  // Go through each transaction
+                {
+                    string[] transaction = lines[i].Split(',');  // Again, split each transaction into pieces
+                    if (transaction[1] == human)    // If the person is the ower...
+                        owes += Convert.ToDouble(transaction[4]);    //... add it to owes
+                    if (transaction[2] == human)   // If the person is the owee (is that a word?)...
+                        owed += Convert.ToDouble(transaction[4]);    //... add it to owed
+                }
+                Console.WriteLine("{0} owes {1} and is owed {2}", human, owes, owed);   // List every person and their total owed/owes
             }
             Console.ReadLine();
-
         }
     }
 
