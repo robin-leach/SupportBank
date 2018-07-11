@@ -11,9 +11,9 @@ namespace SupportBank
 {
     class Program
     {
-        public class Debt
+        public class Debt      // Set up a standard class to record each transaction
         {
-            public string Date;
+            public DateTime Date;
             public string From;
             public string To;
             public string Narrative;
@@ -49,8 +49,11 @@ namespace SupportBank
             for (int i = 0; i < entries; i++)  // Go through each transaction
             {
                 if (debts[i].From == specific_person || debts[i].To == specific_person)     // If the person is the ower or the owee
-                    Console.WriteLine("{0}: {1} paid {2} to {3} for {4}", debts[i].Date, debts[i].From, debts[i].To, debts[i].Amount, debts[i].Narrative);
-                              // write the details out
+                {
+                    DateTime temp_date = debts[i].Date;
+                    Console.WriteLine("{0}: {1} paid {2} to {3} for {4}", temp_date.ToString("ddMMyy"), debts[i].From, debts[i].To, debts[i].Amount, debts[i].Narrative);
+                    // write the details out
+                }
                     
             }
             Console.WriteLine("Press enter to continue.");
@@ -94,7 +97,7 @@ namespace SupportBank
                 try
                 {
                     Debt temp = new Debt();      // Fill in all the details of the current transaction in a temporary instance
-                    temp.Date = transaction[0];
+                    temp.Date = Convert.ToDateTime(transaction[0]);   // Make sure the format is correct
                     temp.From = transaction[1];
                     temp.To = transaction[2];
                     temp.Narrative = transaction[3];
@@ -107,7 +110,8 @@ namespace SupportBank
                 catch
                 {
                     logger.Info("There was an issue when reading the following transaction: " + "date: " + transaction[0] + ", from " + transaction[1]
-                         + " to " + transaction[2] + " of the amount" + transaction [3]);
+                         + " to " + transaction[2] + " for " + transaction[3] + " of the amount " + transaction [4]);
+                    // If there's an error, display the details of the offending entry so as to work out what went wrong.
                 }
             }
             people = people.Distinct().ToList();                  // Remove any duplicates
