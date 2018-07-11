@@ -1,9 +1,12 @@
-﻿using NLog;
+﻿using Newtonsoft.Json;
+using NLog;
 using NLog.Config;
 using NLog.Targets;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+
 
 
 
@@ -11,6 +14,17 @@ namespace SupportBank
 {
     class Program
     {
+
+        public class json_Debt
+        {
+            public DateTime Date;
+            public string FromAccount;
+            public string ToAccount;
+            public string Narrative;
+            public double Amount;
+
+        }
+    
         public class Debt      // Set up a standard class to record each transaction
         {
             public DateTime Date;
@@ -18,6 +32,26 @@ namespace SupportBank
             public string To;
             public string Narrative;
             public double Amount;
+
+            public Debt()
+            {
+                //
+            }
+
+            public Debt(json_Debt raw)
+            {
+                Date = raw.Date;
+                From = raw.FromAccount;
+                To = raw.ToAccount;
+                Narrative = raw.Narrative;
+                Amount = raw.Amount;
+            }
+
+        }
+
+        public class Debt_list
+        {
+            public Debt entry;
         }
 
         static void List_all(List<string> people, int entries, string[] lines, Debt[] debts)
@@ -60,6 +94,7 @@ namespace SupportBank
             Console.ReadLine();
         }
 
+
         static void Main(string[] args)
         {
             var config = new LoggingConfiguration();
@@ -73,9 +108,32 @@ namespace SupportBank
 
 
 
+            /* This section reads all the data we'll be using */
+
             string file_1 = System.IO.File.ReadAllText(@"C:\Work\Training\SupportBank\Transactions2014.csv");
             string file_2 = System.IO.File.ReadAllText(@"C:\Work\Training\SupportBank\DodgyTransactions2015.csv");
             file_2 = file_2.Replace("Date,From,To,Narrative,Amount", "");
+
+
+            List<json_Debt> result;
+
+            using (StreamReader r = new StreamReader(@"C:\Work\Training\SupportBank\Transactions2013.json"))
+            {
+                string json = r.ReadToEnd();
+                result = JsonConvert.DeserializeObject<List<json_Debt>>(json);
+            }
+
+            json_Debt[] json_debts = new json_Debt[result.Count];
+            Debt[] converted_debts = new Debt[result.Count];
+            for (int i = 1; i <= result.Count; i++)
+            {
+                json_debts[i - 1] = result[i - 1];
+                converted_debts[i - 1] = new Debt(json_debts[i - 1]);
+            }
+
+
+
+
             string whole_file = file_1 + file_2;
 
             // Reads CSV file, stores it as one long string called whole_file
