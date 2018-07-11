@@ -34,6 +34,21 @@ namespace SupportBank
                 double total = owes - owed;
                 Console.WriteLine("{0} owes {1} and is owed {2}. In total, they owe {3}.", current_person, owes, owed, total);   // List every person and their total owed/owes
             }
+            Console.WriteLine("Press enter to continue.");
+            Console.ReadLine();
+        }
+
+
+        static void List_person(string specific_person, List<string> people, int entries, string[] lines, Debt[] debts)
+        {
+            for (int i = 0; i < entries; i++)  // Go through each transaction
+            {
+                if (debts[i].From == specific_person || debts[i].To == specific_person)     // If the person is the ower or the owee
+                    Console.WriteLine("{0}: {1} paid {2} to {3} for {4}", debts[i].Date, debts[i].From, debts[i].To, debts[i].Amount, debts[i].Narrative);
+                              // write the details out
+                    
+            }
+            Console.WriteLine("Press enter to continue.");
             Console.ReadLine();
         }
 
@@ -55,13 +70,13 @@ namespace SupportBank
             {
                 string[] transaction = lines[i].Split(',', StringSplitOptions.RemoveEmptyEntries);       // Split the transactions into their different components
 
-                Debt temp = new Debt();
+                Debt temp = new Debt();      // Fill in all the details of the current transaction in a temporary instance
                 temp.Date = transaction[0];  
                 temp.From = transaction[1];
                 temp.To = transaction[2];
                 temp.Narrative = transaction[3];
                 temp.Amount = Convert.ToDouble(transaction[4]);
-                debts[i - 1] = temp;
+                debts[i - 1] = temp;      // Transfer accross the current transaction
 
                 people.Add(transaction[1]);                       // Add whoever owes to the list
                 people.Add(transaction[2]);                       // Add whoever is owed to the list
@@ -73,27 +88,35 @@ namespace SupportBank
             bool running = true;
             while (running == true)
             {
-                Console.WriteLine("Enter a command (List All or Exit): ");
+                Console.WriteLine("Enter a command (List All, List [Specific person] or Exit): ");
                 string input = Console.ReadLine(); // Get user input for the command"
+                bool valid_input = false;
                 if (input == "List All")
-                    List_all(people, entries, lines, debts);
+                {
+                    List_all(people, entries, lines, debts);        // If they want List All, run that function
+                    valid_input = true;
+                }
                 else if (input == "Exit")
-                    running = false;
+                {
+                    running = false;                               // If they input Exit, end the program
+                }
                 else
-                    Console.WriteLine("Invalid command, try again");
+                {
+                    for (int m = 0; m < people.Count; m++)
+                    {
+                        if (input == "List " + people[m])           // If they input a specific person's account, run that function
+                        {
+                            List_person(people[m], people, entries, lines, debts);
+                            valid_input = true;
+                        }
+                    }
+                }
+                if (valid_input == false)                  // If none of the above happened, they haven't given a valid command.
+                    Console.WriteLine("Invalid input. Please enter a valid command.");
+                
             }
 
 
         }
-    }
-
-
-    
-
-
-    public class Person
-    {
-        public float Debts_to_others;
-        public float Debts_from_others;
     }
 }
