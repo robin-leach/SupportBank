@@ -51,7 +51,7 @@ namespace SupportBank
                 if (debts[i].From == specific_person || debts[i].To == specific_person)     // If the person is the ower or the owee
                 {
                     DateTime temp_date = debts[i].Date;
-                    Console.WriteLine("{0}: {1} paid {2} to {3} for {4}", temp_date.ToString("ddMMyy"), debts[i].From, debts[i].To, debts[i].Amount, debts[i].Narrative);
+                    Console.WriteLine("{0}: {1} paid {3} to {2} for {4}", temp_date.ToString("dd/MM/yy"), debts[i].From, debts[i].To, debts[i].Amount, debts[i].Narrative);
                     // write the details out
                 }
                     
@@ -110,8 +110,15 @@ namespace SupportBank
                 catch
                 {
                     logger.Info("There was an issue when reading the following transaction: " + "date: " + transaction[0] + ", from " + transaction[1]
-                         + " to " + transaction[2] + " for " + transaction[3] + " of the amount " + transaction [4]);
+                         + " to " + transaction[2] + " for " + transaction[3] + " of the amount " + transaction [4] + ". This set of data will now just become zero/empty.");
                     // If there's an error, display the details of the offending entry so as to work out what went wrong.
+                    Debt temp = new Debt();      // Fill in all the details of the current transaction in a temporary instance
+                    temp.Date = new DateTime();
+                    temp.From = "";
+                    temp.To = "";
+                    temp.Narrative = "";
+                    temp.Amount = 0;
+                    debts[i - 1] = temp;
                 }
             }
             people = people.Distinct().ToList();                  // Remove any duplicates
@@ -126,12 +133,15 @@ namespace SupportBank
                 bool valid_input = false;
                 if (input == "List All")
                 {
+                    logger.Info("User wants a list of all the data!");
                     List_all(people, entries, lines, debts);        // If they want List All, run that function
                     valid_input = true;
                 }
                 else if (input == "Exit")
                 {
+                    logger.Info("User wants to leave me. What have I done??");
                     running = false;                               // If they input Exit, end the program
+                    valid_input = true;
                 }
                 else
                 {
@@ -139,13 +149,17 @@ namespace SupportBank
                     {
                         if (input == "List " + people[m])           // If they input a specific person's account, run that function
                         {
+                            logger.Info("User wants to know the specific transactions of " + people[m] + ". Curious...");
                             List_person(people[m], people, entries, lines, debts);
                             valid_input = true;
                         }
                     }
                 }
                 if (valid_input == false)                  // If none of the above happened, they haven't given a valid command.
+                {
+                    logger.Info("User can't even do a valid input command. They tried to hit me with {0}. User? More like loser!", input);
                     Console.WriteLine("Invalid input. Please enter a valid command.");
+                }
                 
             }
 
