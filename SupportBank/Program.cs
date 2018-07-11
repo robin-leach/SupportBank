@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 
 
@@ -131,7 +132,8 @@ namespace SupportBank
                 converted_debts[i - 1] = new Debt(json_debts[i - 1]);
             }
 
-
+            Console.WriteLine(converted_debts[0].To);
+            Console.ReadLine();
 
 
             string whole_file = file_1 + file_2;
