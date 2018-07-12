@@ -16,6 +16,11 @@ namespace SupportBank
     class Program
     {
 
+
+        /* First we set up appropriate classes. For now this will involve a separate class for the Json version, and for the CSV version */
+
+
+        /* This is the Json version */
         public class json_Debt
         {
             public DateTime Date;
@@ -26,7 +31,10 @@ namespace SupportBank
 
         }
     
-        public class Debt      // Set up a standard class to record each transaction
+
+
+        /* ...and this is the standard version, used first for CSV */
+        public class Debt 
         {
             public DateTime Date;
             public string From;
@@ -34,11 +42,15 @@ namespace SupportBank
             public string Narrative;
             public double Amount;
 
+
+            /* We want to be able to make a new Debt() without any defaults */
             public Debt()
             {
                 //
             }
 
+
+            /* We also here have a construct that will take the Json form of a debt, and convert it to the standard form */
             public Debt(json_Debt raw)
             {
                 Date = raw.Date;
@@ -50,13 +62,12 @@ namespace SupportBank
 
         }
 
-        public class Debt_list
-        {
-            public Debt entry;
-        }
+
+        /* Below is a function that carries out the List All process, if the user inputs that command */
 
         static void List_all(List<string> people, int entries, string[] lines, Debt[] debts)
         {
+            /* We want to be able to log, in case something goes wrong */
             ILogger logger = LogManager.GetCurrentClassLogger();
 
             for (int n=0; n<people.Count; n++)                       // Now we go through each person and find out how much they owe/are owed
@@ -74,11 +85,16 @@ namespace SupportBank
                 double total = owes - owed;
                 Console.WriteLine("{0} owes {1} and is owed {2}. In total, they owe {3}.", current_person, owes, owed, total);   // List every person and their total owed/owes
             }
+
+            /* At the end of this, the user will need to press another key to get back to the main menu of command input */
+
             Console.WriteLine("Press enter to continue.");
             Console.ReadLine();
         }
 
 
+
+        /* Here is the function for when listing the transactions of a specific person */
         static void List_person(string specific_person, List<string> people, int entries, string[] lines, Debt[] debts)
         {
             for (int i = 0; i < entries; i++)  // Go through each transaction
@@ -96,8 +112,11 @@ namespace SupportBank
         }
 
 
+
+        /* Now we write our main program, making reference to the functions above where necessary. */
         static void Main(string[] args)
         {
+            /* Set up log functionality */
             var config = new LoggingConfiguration();
             var target = new FileTarget { FileName = @"C:\Work\Logs\SupportBank.log", Layout = @"${longdate} ${level} - ${logger}: ${message}" };
             config.AddTarget("File Logger", target);
@@ -111,38 +130,27 @@ namespace SupportBank
 
             /* This section reads all the data we'll be using */
 
+
+            /* Start with the two CSV files. Read them into strings, then remove the initial line with headings. Concatenate them into
+             * one long string.*/
             string file_1 = System.IO.File.ReadAllText(@"C:\Work\Training\SupportBank\Transactions2014.csv");
             string file_2 = System.IO.File.ReadAllText(@"C:\Work\Training\SupportBank\DodgyTransactions2015.csv");
             file_2 = file_2.Replace("Date,From,To,Narrative,Amount", "");
-
-
-            List<json_Debt> result;
-
-            using (StreamReader r = new StreamReader(@"C:\Work\Training\SupportBank\Transactions2013.json"))
-            {
-                string json = r.ReadToEnd();
-                result = JsonConvert.DeserializeObject<List<json_Debt>>(json);
-            }
-
-            json_Debt[] json_debts = new json_Debt[result.Count];
-            Debt[] converted_debts = new Debt[result.Count];
-            for (int i = 1; i <= result.Count; i++)
-            {
-                json_debts[i - 1] = result[i - 1];
-                converted_debts[i - 1] = new Debt(json_debts[i - 1]);
-            }
-
             string whole_file = file_1 + file_2;
 
-            // Reads CSV file, stores it as one long string called whole_file
+            /* Replaces '\n' in the new file by '\r' */
             whole_file = whole_file.Replace('\n', '\r');
-            // Replaces '\n' in the new file by '\r'
             string[] lines = whole_file.Split(new char[] { '\r' },
                  StringSplitOptions.RemoveEmptyEntries);
             // Splits the whole file into lines, wherever there is an instance of '\r', and removes any empty entries
             int entries = lines.Length - 1;  // create a variable to know how many transactions we're dealing with
 
-            logger.Info("We've read the files");
+            logger.Info("We've read the CSV files");
+
+
+
+
+            /* Now we will convert our array of strings into the standard Debt class that we will be using, so as to combine with the Json later */
 
             Debt[] debts = new Debt[entries];        // Record in an array, debts, each transaction as an instance of a class
 
@@ -163,7 +171,7 @@ namespace SupportBank
                     people.Add(transaction[1]);                       // Add whoever owes to the list
                     people.Add(transaction[2]);                       // Add whoever is owed to the list
                 }
-                catch
+                catch    // If something goes wrong, we'll know about it, and record the data as 0
                 {
                     logger.Info("There was an issue when reading the following transaction: " + "date: " + transaction[0] + ", from " + transaction[1]
                          + " to " + transaction[2] + " for " + transaction[3] + " of the amount " + transaction [4] + ". This set of data will now just become zero/empty.");
@@ -177,9 +185,36 @@ namespace SupportBank
                     debts[i - 1] = temp;
                 }
             }
-            people = people.Distinct().ToList();                  // Remove any duplicates
+            people = people.Distinct().ToList();                  // Remove any duplicates in the list of people.
 
 
+
+
+
+            /* Now we read the Json file. We read it into a string, deserialise it and put it into the Json debt class format */
+            List<json_Debt> result;
+
+            using (StreamReader r = new StreamReader(@"C:\Work\Training\SupportBank\Transactions2013.json"))
+            {
+                string json = r.ReadToEnd();
+                result = JsonConvert.DeserializeObject<List<json_Debt>>(json);
+            }
+
+
+
+            /* With that done, we convert it into our standard debt format, which we will have for the CSV files */
+            json_Debt[] json_debts = new json_Debt[result.Count];
+            Debt[] converted_debts = new Debt[result.Count];
+            for (int i = 1; i <= result.Count; i++)
+            {
+                json_debts[i - 1] = result[i - 1];
+                converted_debts[i - 1] = new Debt(json_debts[i - 1]);
+            }
+
+            logger.Info("We've read the Json file");
+
+
+            /* Finally, we merge the data from the Json with that from the CSVs */
 
             Debt[] total_debts = new Debt[entries + result.Count];    // Merge all the data into one big array.
             for (int i = 0; i < result.Count; i++)
@@ -189,8 +224,13 @@ namespace SupportBank
 
             entries = entries + result.Count;
 
+            logger.Info("We've amalgamated into one large array");
 
 
+
+
+            /* That finishes out compilation and sorting of the data. Here we start the actual process of taking user commands, and
+             * churning out whatever data they have requested */
 
             bool running = true;
             while (running == true)
