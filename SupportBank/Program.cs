@@ -88,9 +88,6 @@ namespace SupportBank
             }
 
             /* At the end of this, the user will need to press another key to get back to the main menu of command input */
-
-            Console.WriteLine("Press enter to continue.");
-            Console.ReadLine();
         }
 
 
@@ -108,8 +105,6 @@ namespace SupportBank
                 }
                     
             }
-            Console.WriteLine("Press enter to continue.");
-            Console.ReadLine();
         }
 
 
@@ -118,58 +113,134 @@ namespace SupportBank
         {
             ILogger logger = LogManager.GetCurrentClassLogger();
 
+
+            /* Log things, in case they go wrong */
             logger.Info("Now we use the Import_csv function");
 
 
-            string raw_data_csv = System.IO.File.ReadAllText(file);
-            raw_data_csv = raw_data_csv.Replace("Date,From,To,Narrative,Amount", "");
-            raw_data_csv= raw_data_csv.Replace('\n', '\r');
-            string[] csv_lines = raw_data_csv.Split(new char[] { '\r' },
-     StringSplitOptions.RemoveEmptyEntries);
-
-            logger.Info("We've read the file");
-
-            Debt[] newdebts = new Debt[entries + csv_lines.Length];
-
-            for(int i=0; i<entries; i++)
-                newdebts[i] = debts[i];
-
-            for (int i = 0; i < csv_lines.Length; i++)
+            /* Obtain the raw data */
+            try
             {
-                string[] transaction = csv_lines[i].Split(',', StringSplitOptions.RemoveEmptyEntries);       // Split the transactions into their different components
-                try
+
+                /* Try to read the data. If not, the function will cancel and return what you started with. */
+                string raw_data_csv = System.IO.File.ReadAllText(file);
+                raw_data_csv = raw_data_csv.Replace("Date,From,To,Narrative,Amount", "");
+                raw_data_csv = raw_data_csv.Replace('\n', '\r');
+                string[] csv_lines = raw_data_csv.Split(new char[] { '\r' },
+         StringSplitOptions.RemoveEmptyEntries);
+
+                logger.Info("We've read the file");
+
+
+                /* Create a new array to store all the new data, alongside the old data */
+                Debt[] newdebts = new Debt[entries + csv_lines.Length];
+
+                for (int i = 0; i < entries; i++)
+                    newdebts[i] = debts[i];
+
+
+                /* Read through line by line, and add in all the new data */
+                for (int i = 0; i < csv_lines.Length; i++)
                 {
-                Debt temp = new Debt();      // Fill in all the details of the current transaction in a temporary instance
-                temp.Date = Convert.ToDateTime(transaction[0]);   // Make sure the format is correct
-                temp.From = transaction[1];
-                temp.To = transaction[2];
-                temp.Narrative = transaction[3];
-                temp.Amount = Convert.ToDouble(transaction[4]);
-                newdebts[i+entries] = temp;      // Transfer accross the current transaction
+                    string[] transaction = csv_lines[i].Split(',', StringSplitOptions.RemoveEmptyEntries);       // Split the transactions into their different components
+                    try
+                    {
+                        Debt temp = new Debt();      // Fill in all the details of the current transaction in a temporary instance
+                        temp.Date = Convert.ToDateTime(transaction[0]);   // Make sure the format is correct
+                        temp.From = transaction[1];
+                        temp.To = transaction[2];
+                        temp.Narrative = transaction[3];
+                        temp.Amount = Convert.ToDouble(transaction[4]);
+                        newdebts[i + entries] = temp;      // Transfer accross the current transaction
+                    }
+                    catch    // If something goes wrong, we'll know about it, and record the data as 0
+                    {
+                        logger.Info("There was an issue when reading the following transaction: " + "date: " + transaction[0] + ", from " + transaction[1]
+                             + " to " + transaction[2] + " for " + transaction[3] + " of the amount " + transaction[4] + ". This set of data will now just become zero/empty.");
+                        // If there's an error, display the details of the offending entry so as to work out what went wrong.
+                        Debt temp = new Debt();      // Fill in all the details of the current transaction in a temporary instance
+                        temp.Date = new DateTime();
+                        temp.From = "";
+                        temp.To = "";
+                        temp.Narrative = "";
+                        temp.Amount = 0;
+                        newdebts[i + entries] = temp;
+                    }
                 }
-                catch    // If something goes wrong, we'll know about it, and record the data as 0
-                {
-                    logger.Info("There was an issue when reading the following transaction: " + "date: " + transaction[0] + ", from " + transaction[1]
-                         + " to " + transaction[2] + " for " + transaction[3] + " of the amount " + transaction[4] + ". This set of data will now just become zero/empty.");
-                    // If there's an error, display the details of the offending entry so as to work out what went wrong.
-                    Debt temp = new Debt();      // Fill in all the details of the current transaction in a temporary instance
-                    temp.Date = new DateTime();
-                    temp.From = "";
-                    temp.To = "";
-                    temp.Narrative = "";
-                    temp.Amount = 0;
-                    newdebts[i +entries] = temp;
-                }
+
+
+                entries = entries + csv_lines.Length;
+                logger.Info("I mean hopefully now it's done, right?");
+                return newdebts;
             }
-
-
-            entries = entries + csv_lines.Length;
-            logger.Info("I mean hopefully now it's done, right?");
-            return newdebts;
+            catch
+            {
+                Console.WriteLine("Invalid file. Please try again.");
+                return debts;
+            }
 
 
         }
 
+
+        /* Here is the function for importing a .json file */
+        static Debt[] Import_json(string file, int entries, Debt[] debts)
+        {
+            ILogger logger = LogManager.GetCurrentClassLogger();
+
+
+            /* Log things, in case they go wrong */
+            logger.Info("Now we use the Import_json function");
+
+
+            /* Obtain the raw data */
+            try
+            {
+                /* Try to read the data. If not, the function will cancel and return what you started with. */
+                List<json_Debt> json_result;
+
+                using (StreamReader r = new StreamReader(file))
+                {
+                    string json = r.ReadToEnd();
+                    json_result = JsonConvert.DeserializeObject<List<json_Debt>>(json);
+                }
+
+
+                logger.Info("We've read the file");
+
+                json_Debt[] json_debts = new json_Debt[json_result.Count];
+                Debt[] converted_debts = new Debt[json_result.Count];
+                for (int i = 0; i < json_result.Count; i++)
+                {
+                    json_debts[i] = json_result[i];
+                    converted_debts[i] = new Debt(json_debts[i]);
+                }
+
+
+                /* Create a new array to store all the new data, alongside the old data */
+                Debt[] newdebts = new Debt[entries+json_result.Count];
+
+                for (int i = 0; i < entries; i++)
+                    newdebts[i] = debts[i];
+
+
+                /* Read through line by line, and add in all the new data */
+                for (int i = 0; i < json_result.Count; i++)
+                    newdebts[i + entries] = converted_debts[i];
+
+
+
+                logger.Info("I mean hopefully now it's done, right?");
+                return newdebts;
+            }
+            catch
+            {
+                Console.WriteLine("Invalid file. Please try again.");
+                return debts;
+            }
+
+
+        }
 
 
         /* Now we write our main program, making reference to the functions above where necessary. */
@@ -348,6 +419,8 @@ namespace SupportBank
                                     case "json":
                                         {
                                             logger.Info("User wants to import a json???? WHYYYYYY");
+                                            total_debts = Import_json(file_name, entries, total_debts);
+                                            entries = entries + converted_debts.Length;
                                             break;
                                         }
 
