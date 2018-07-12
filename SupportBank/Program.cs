@@ -7,9 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-
-
-
 namespace SupportBank
 {
     class Program
@@ -196,6 +193,7 @@ namespace SupportBank
         /* Now we write our main program, making reference to the functions above where necessary. */
         static void Main(string[] args)
         {
+
             /* Set up log functionality */
             var config = new LoggingConfiguration();
             var target = new FileTarget { FileName = @"C:\Work\Logs\SupportBank.log", Layout = @"${longdate} ${level} - ${logger}: ${message}" };
@@ -232,6 +230,10 @@ namespace SupportBank
             logger.Info("We've read the Json file");
 
 
+            /* Now we read the xml file */
+            string json_of_xml = import_xml_to_json(@"C:\Users\RTL\Documents\Transactions2012.xml");
+            total_debts = Import_json_string(json_of_xml, entries, total_debts);
+            entries = total_debts.Length;
 
             /* Now we get a list of all the different people involved */
 
