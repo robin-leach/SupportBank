@@ -132,10 +132,6 @@ namespace SupportBank
                 converted_debts[i - 1] = new Debt(json_debts[i - 1]);
             }
 
-            Console.WriteLine(converted_debts[0].To);
-            Console.ReadLine();
-
-
             string whole_file = file_1 + file_2;
 
             // Reads CSV file, stores it as one long string called whole_file
@@ -185,6 +181,17 @@ namespace SupportBank
 
 
 
+            Debt[] total_debts = new Debt[entries + result.Count];    // Merge all the data into one big array.
+            for (int i = 0; i < result.Count; i++)
+                total_debts[i] = converted_debts[i];
+            for (int i = 0; i < entries; i++)
+                total_debts[i + result.Count] = debts[i];
+
+            entries = entries + result.Count;
+
+
+
+
             bool running = true;
             while (running == true)
             {
@@ -194,7 +201,7 @@ namespace SupportBank
                 if (input == "List All")
                 {
                     logger.Info("User wants a list of all the data!");
-                    List_all(people, entries, lines, debts);        // If they want List All, run that function
+                    List_all(people, entries, lines, total_debts);        // If they want List All, run that function
                     valid_input = true;
                 }
                 else if (input == "Exit")
@@ -210,7 +217,7 @@ namespace SupportBank
                         if (input == "List " + people[m])           // If they input a specific person's account, run that function
                         {
                             logger.Info("User wants to know the specific transactions of " + people[m] + ". Curious...");
-                            List_person(people[m], people, entries, lines, debts);
+                            List_person(people[m], people, entries, lines, total_debts);
                             valid_input = true;
                         }
                     }
