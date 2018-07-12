@@ -83,7 +83,8 @@ namespace SupportBank
                         owed += debts[i].Amount;    //... add it to owed
                 }
                 double total = owes - owed;
-                Console.WriteLine("{0} owes {1} and is owed {2}. In total, they owe {3}.", current_person, owes, owed, total);   // List every person and their total owed/owes
+                Console.WriteLine("{0} owes {1} and is owed {2}. In total, they owe {3}.", current_person,
+                    Math.Round(owes,2), Math.Round(owed,2), Math.Round(total,2));   // List every person and their total owed/owes
             }
 
             /* At the end of this, the user will need to press another key to get back to the main menu of command input */
@@ -109,6 +110,64 @@ namespace SupportBank
             }
             Console.WriteLine("Press enter to continue.");
             Console.ReadLine();
+        }
+
+
+        /* Here is the function for importing a .csv file */
+        static Debt[] Import_csv(string file, int entries, Debt[] debts)
+        {
+            ILogger logger = LogManager.GetCurrentClassLogger();
+
+            logger.Info("Now we use the Import_csv function");
+
+
+            string raw_data_csv = System.IO.File.ReadAllText(file);
+            raw_data_csv = raw_data_csv.Replace("Date,From,To,Narrative,Amount", "");
+            raw_data_csv= raw_data_csv.Replace('\n', '\r');
+            string[] csv_lines = raw_data_csv.Split(new char[] { '\r' },
+     StringSplitOptions.RemoveEmptyEntries);
+
+            logger.Info("We've read the file");
+
+            Debt[] newdebts = new Debt[entries + csv_lines.Length];
+
+            for(int i=0; i<entries; i++)
+                newdebts[i] = debts[i];
+
+            for (int i = 0; i < csv_lines.Length; i++)
+            {
+                string[] transaction = csv_lines[i].Split(',', StringSplitOptions.RemoveEmptyEntries);       // Split the transactions into their different components
+                try
+                {
+                Debt temp = new Debt();      // Fill in all the details of the current transaction in a temporary instance
+                temp.Date = Convert.ToDateTime(transaction[0]);   // Make sure the format is correct
+                temp.From = transaction[1];
+                temp.To = transaction[2];
+                temp.Narrative = transaction[3];
+                temp.Amount = Convert.ToDouble(transaction[4]);
+                newdebts[i+entries] = temp;      // Transfer accross the current transaction
+                }
+                catch    // If something goes wrong, we'll know about it, and record the data as 0
+                {
+                    logger.Info("There was an issue when reading the following transaction: " + "date: " + transaction[0] + ", from " + transaction[1]
+                         + " to " + transaction[2] + " for " + transaction[3] + " of the amount " + transaction[4] + ". This set of data will now just become zero/empty.");
+                    // If there's an error, display the details of the offending entry so as to work out what went wrong.
+                    Debt temp = new Debt();      // Fill in all the details of the current transaction in a temporary instance
+                    temp.Date = new DateTime();
+                    temp.From = "";
+                    temp.To = "";
+                    temp.Narrative = "";
+                    temp.Amount = 0;
+                    newdebts[i +entries] = temp;
+                }
+            }
+
+
+            entries = entries + csv_lines.Length;
+            logger.Info("I mean hopefully now it's done, right?");
+            return newdebts;
+
+
         }
 
 
@@ -235,37 +294,98 @@ namespace SupportBank
             bool running = true;
             while (running == true)
             {
-                Console.WriteLine("Enter a command (List All, List [Specific person] or Exit): ");
+                Console.WriteLine("Enter a command (List All, List [Specific person], Import File or Exit): ");
                 string input = Console.ReadLine(); // Get user input for the command"
                 bool valid_input = false;
-                if (input == "List All")
-                {
-                    logger.Info("User wants a list of all the data!");
-                    List_all(people, entries, lines, total_debts);        // If they want List All, run that function
-                    valid_input = true;
-                }
-                else if (input == "Exit")
-                {
-                    logger.Info("User wants to leave me. What have I done??");
-                    running = false;                               // If they input Exit, end the program
-                    valid_input = true;
-                }
-                else
-                {
-                    for (int m = 0; m < people.Count; m++)
+
+                switch (input) {
+
+
+                    case ("List All"):
                     {
-                        if (input == "List " + people[m])           // If they input a specific person's account, run that function
-                        {
-                            logger.Info("User wants to know the specific transactions of " + people[m] + ". Curious...");
-                            List_person(people[m], people, entries, lines, total_debts);
-                            valid_input = true;
-                        }
+                        logger.Info("User wants a list of all the data!");
+                        List_all(people, entries, lines, total_debts);        // If they want List All, run that function
+                        valid_input = true;
+                            break;
                     }
-                }
-                if (valid_input == false)                  // If none of the above happened, they haven't given a valid command.
-                {
-                    logger.Info("User can't even do a valid input command. They tried to hit me with {0}. User? More like loser!", input);
-                    Console.WriteLine("Invalid input. Please enter a valid command.");
+
+                    case ("Exit"):
+                    {
+                        logger.Info("User wants to leave me. What have I done??");
+                        running = false;                               // If they input Exit, end the program
+                        valid_input = true;
+                            break;
+                    }
+
+                    case ("Import File"):              // Add functionality for the user to specify a file to import.
+                        {
+                            logger.Info("User wants to import another file. Eurgh!");
+                            valid_input = true;
+                            Console.WriteLine("Please enter the file that you would like to import");
+                            string file_name = Console.ReadLine(); // Get user input for the file to import.
+
+
+                            try
+                            {
+                                string file_type = file_name.Substring(file_name.Length - 4, 4);
+
+
+                                /* Now we deal with the different cases of different filetypes */
+
+                                switch (file_type)
+                                {
+
+                                    /* At this point it makes sense to create new functions to deal with the different cases */
+
+                                    case ".csv":
+                                        {
+                                            logger.Info("User wants to import a CSV. We all love commas!");
+                                            total_debts = Import_csv(file_name, entries, total_debts);
+                                            entries = total_debts.Length;
+                                            break;
+                                        }
+
+                                    case "json":
+                                        {
+                                            logger.Info("User wants to import a json???? WHYYYYYY");
+                                            break;
+                                        }
+
+                                    default:
+                                        Console.WriteLine("Invalid file name! Please try again.");
+                                        break;
+                                }
+
+                            }
+
+                            /* If the filename they inputted doesn't end in a sensible way, or is not long enough, we reach this part */
+                            catch
+                            {
+                                Console.WriteLine("Invalid file name! Please try again.");
+                            }
+
+                            break;
+                            
+                        }
+
+                    default:
+                        {
+                            for (int m = 0; m < people.Count; m++)
+                            {
+                                if (input == "List " + people[m])           // If they input a specific person's account, run that function
+                                {
+                                    logger.Info("User wants to know the specific transactions of " + people[m] + ". Curious...");
+                                    List_person(people[m], people, entries, lines, total_debts);
+                                    valid_input = true;
+                                }
+                            }
+                            if (valid_input == false)                  // If none of the above happened, they haven't given a valid command.
+                            {
+                                logger.Info("User can't even do a valid input command. They tried to hit me with {0}. User? More like loser!", input);
+                                Console.WriteLine("Invalid input. Please enter a valid command.");
+                            }
+                            break;
+                        }
                 }
                 
             }
